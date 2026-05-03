@@ -1,33 +1,18 @@
-# Local env file with admin password + Anthropic key. Never commit.
+# Local env file with the admin password. Never commit.
 .env
 .env.*
 !.env.example
 
-# Virtualenv
+# Stale Python state from the v0.1 Streamlit shape — kept ignored
+# so an old `.venv/` lying around doesn't accidentally land in a
+# commit. The curator no longer uses Python at all (CLAUDE.md +
+# bash scripts only); these patterns can be deleted in the next
+# clean-up pass.
 .venv/
 venv/
 env/
-
-# Python build / cache
 __pycache__/
 *.py[cod]
-*.egg-info/
-build/
-dist/
-.eggs/
-
-# Tests / lint
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-htmlcov/
-.coverage
-.coverage.*
-
-# Streamlit's secrets (we use .env via python-dotenv, but this is the
-# convention for the platform's native secrets file — gitignored
-# regardless).
-.streamlit/secrets.toml
 
 # IDEs
 .idea/
