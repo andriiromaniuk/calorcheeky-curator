@@ -38,6 +38,35 @@ inside it.
 
 ## The 5-step workflow
 
+### 0. Verify the wire contract isn't stale
+
+**Always run this first.** If the server's `SeedPack.kt` shape has
+drifted vs the runbook below, your proposal will 4xx/5xx at publish
+time and the user will lose the work.
+
+```bash
+scripts/check-wire.sh UA   # or UK / whichever country
+```
+
+- **Exit 0** ("payload shape matches CLAUDE.md") → continue to step 1.
+- **Exit 2** with `ERROR: ... missing required key` or `... unknown key` →
+  STOP. The server's SeedPack.kt and this repo's CLAUDE.md +
+  `check-wire.sh` are out of sync. Either:
+    1. The server-side calorcheeky repo added / removed a field on
+       `SeedPackPayload` or `SeedPackIngredient`. Check
+       `M:/Projects/Calorcheeky/server/src/main/kotlin/.../server/SeedPack.kt`
+       — if you see a column unfamiliar from this CLAUDE.md, update
+       this file's "Wire contract reference" section AND the
+       `EXPECTED_*` arrays in `scripts/check-wire.sh` AND any
+       relevant guidance in step 3 below. Then re-run check-wire.
+    2. The check-wire script has a bug. Print the actual keys
+       (`scripts/fetch-pack.sh UA | jq '.payload | keys'`) and
+       compare against the script's lists.
+- **Exit 0 with no published pack yet** ("nothing to check") →
+  also fine, but treat this as a "we're flying blind" state —
+  proceed to step 1 with extra care, you don't have a real
+  payload sample to ground the contract.
+
 ### 1. Fetch the current pack
 
 ```bash
@@ -167,6 +196,11 @@ git commit -m "curate(UA): seasonal update v<N+1> — <one-line summary>"
 
 ## Wire contract reference
 
+> **⚠️ This section is the source of truth for the curator.**
+> When the server's `SeedPack.kt` changes, BOTH the canonical fields
+> below AND the `EXPECTED_*` arrays in `scripts/check-wire.sh` must
+> be updated together. Step 0 fails loud when they drift.
+
 The `SeedPackPayload` shape (matches the server's
 `@Serializable data class SeedPackPayload`):
 
@@ -213,6 +247,36 @@ mint a new one for the same slug).
 
 **`recipes`** must be present (empty array is fine). v1 of the
 client doesn't reconcile recipes; you can ignore the field.
+
+### Maintaining this contract across repos
+
+The wire shape is co-defined by:
+
+1. **Server-side Kotlin** at
+   `M:/Projects/Calorcheeky/server/src/main/kotlin/com/romaniukandrii/calorcheeky/server/SeedPack.kt`
+   (the `SeedPackPayload` + `SeedPackIngredient` `@Serializable`
+   classes). When the server adds or renames a column there, the
+   actual JSON shape on the wire changes immediately on the next
+   container restart.
+2. **This file's "Wire contract reference" section** above. The
+   Markdown table is what *you* (Claude in a curator session) read
+   to know what to put in proposals.
+3. **`scripts/check-wire.sh`'s `EXPECTED_*` arrays.** The runtime
+   guard that catches drift before a proposal is built.
+
+A change to (1) without matching changes to (2) and (3) is a bug
+class. Two safeguards prevent it from biting:
+
+- **`check-wire.sh` runs as Step 0** of every curation. It will
+  flag drift before any proposal is generated.
+- **The server-side `SeedPack.kt`** carries a comment block
+  pointing at this repo's CLAUDE.md, reminding any future Claude
+  session editing the file to update the runbook in lockstep.
+
+If you find yourself in Step 0 with a drift error, **fix the
+drift first** — update CLAUDE.md, update `check-wire.sh`,
+re-run check-wire to confirm 0 exit. Then proceed with the
+curation. Don't guess the shape.
 
 ---
 
