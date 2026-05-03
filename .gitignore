@@ -4,15 +4,18 @@
 !.env.example
 
 # Stale Python state from the v0.1 Streamlit shape — kept ignored
-# so an old `.venv/` lying around doesn't accidentally land in a
-# commit. The curator no longer uses Python at all (CLAUDE.md +
-# bash scripts only); these patterns can be deleted in the next
-# clean-up pass.
+# so an old `.venv/` + cache dirs lying around don't accidentally
+# land in a commit. The curator no longer uses Python at all
+# (CLAUDE.md + bash scripts only); the local `src/` directory and
+# .venv left over from `pip install -e .` can be deleted by hand
+# whenever you're feeling tidy. Until then, keep them out of git.
 .venv/
 venv/
 env/
 __pycache__/
 *.py[cod]
+*.egg-info/
+src/   # legacy Python skeleton; safe to rm -rf when convenient
 
 # IDEs
 .idea/
