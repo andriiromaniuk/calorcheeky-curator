@@ -89,3 +89,18 @@ curl -fsS \
   -X POST \
   --data "$WRAPPED" \
   "$CALORCHEEKY_BASE_URL/admin/seed-pack/$COUNTRY"
+
+# Trailing newline so the {country, version} response line + the
+# verify message don't run together on stdout.
+echo
+
+# ── Post-publish verification ──────────────────────────────────
+# A successful HTTP 201 doesn't prove the data on the server
+# matches what we tried to publish. v7 of the UA pack returned
+# 201 + the right version number but every Cyrillic character in
+# Postgres came out as '?'. verify-publish.sh fetches the
+# server-side pack back, asserts no '?' chars in any name /
+# emoji, and asserts the ingredient count matches the proposal
+# file. Failures here mean re-publish.
+echo "[publish] verifying server stored the data correctly..." >&2
+bash "$SCRIPT_DIR/verify-publish.sh" "$COUNTRY" "$PAYLOAD_FILE"

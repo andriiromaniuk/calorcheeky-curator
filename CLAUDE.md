@@ -157,16 +157,53 @@ the file path so they can open it). They'll respond with:
 Stay in conversation until the user explicitly approves. **Never
 publish without that approval.**
 
-### 5. Publish
+### 5. Publish + auto-verify
 
 ```bash
 scripts/publish-pack.sh UA proposals/UA-2026-05/pack.json
 ```
 
-Expected output: `{ "country": "UA", "version": <N+1> }`.
+Expected output: two lines —
 
-If you get any 4xx / 5xx, paste the curl output to the user — most
-common failures are:
+```
+{"country":"UA","version":<N+1>}
+[verify-publish] UA v<N+1> OK — <count> ingredients, no '?' chars
+```
+
+The first line is the server's response (publish succeeded). The
+second line is `verify-publish.sh` confirming that the data
+**actually landed correctly** — fetched the pack back, asserted
+no `?` substitution chars in any name / emoji, and asserted the
+ingredient count matches the proposal file.
+
+**Why verify is mandatory now.** v7 of the UA pack returned
+`{"country":"UA","version":7}` (HTTP 201, looked successful) but
+every Cyrillic character in Postgres came out as `????????`. A
+non-UTF-8 shell locale on the publishing machine had silently
+mangled the JSON between proposal-file and curl. The Android
+client rendered the `?`s as-is in the seasonal-update prompt —
+the bug only surfaced via end-user testing. Auto-verify catches
+this class of failure at publish-time so the fix path stays
+"delete + re-publish v<N+2>" instead of "ship a broken release."
+
+If verify fails:
+
+- **`'?' substitution chars in published rows`** → the publish
+  itself succeeded but the data is corrupted on the server.
+  Re-publish from a UTF-8-safe environment (`publish-pack.sh`
+  forces `LC_ALL=C.UTF-8` + `jq -a` since 0e1e0a0+, but if the
+  fix isn't applied or got bypassed, it can still bite).
+  Recovery: `DELETE FROM seed_pack WHERE country='X' AND
+  version=<bad>` on the server, then re-run publish from a fixed
+  shell. The next version-number bump on republish gives you a
+  clean v<N+2>.
+- **`server has N ingredients ... but proposal has M`** → some
+  intermediate processor truncated the list. Diff the proposal
+  file against the live pack to see what's missing, then
+  re-publish.
+
+If you get any 4xx / 5xx **on the publish step itself** (before
+verify even runs), paste the curl output — most common failures:
 
 - `400 unsupported_country` — typo in the country code; check
   `^[A-Z]{2}$`.
@@ -176,11 +213,11 @@ common failures are:
   `jq -e . proposals/...` to confirm validity, eyeball against
   the wire contract.
 
-After a successful publish, **append a one-line summary to the
-proposal's `report.md`** so the run is self-documenting:
+After a successful publish + verify, **append a one-line summary
+to the proposal's `report.md`** so the run is self-documenting:
 
 ```
-> Published as v<N+1> at <ISO timestamp>. Approved by user: +<adds>, ~<updates>, −<removes>.
+> Published as v<N+1> at <ISO timestamp>. Approved by user: +<adds>, ~<updates>, −<removes>. Verified clean.
 ```
 
 Then commit the proposal artifacts:
@@ -342,7 +379,11 @@ You:
 4. Reply with the report contents + a clear ask:
    > "Proposal ready. +5 / ~2 / −1. Anything to drop or edit?"
 5. Wait for the user. Apply edits. Repeat until approved.
-6. `scripts/publish-pack.sh UA proposals/UA-2026-05/pack.json`.
-7. Append the publish summary, commit.
+6. `scripts/publish-pack.sh UA proposals/UA-2026-05/pack.json` —
+   this auto-runs `scripts/verify-publish.sh` after the POST to
+   confirm the data landed clean (no `?` substitution chars, count
+   matches). Both lines must succeed; if verify fails, see step 5
+   above for the recovery path.
+7. Append the publish summary (with "Verified clean" suffix), commit.
 
 That's it. Don't overthink.
