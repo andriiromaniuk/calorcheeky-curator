@@ -254,7 +254,8 @@ The `SeedPackPayload` shape (matches the server's
       "protein_per_100g": 0.7,
       "carbs_per_100g": 7.7,
       "category": "FRUIT",
-      "external_id": "seed.UA.strawberry.v18"
+      "external_id": "seed.UA.strawberry.v18",
+      "retired_at": null
     }
   ],
   "recipes": []
@@ -265,14 +266,51 @@ The `SeedPackPayload` shape (matches the server's
 `fat_per_100g`, `protein_per_100g`, `carbs_per_100g`, `category`,
 `external_id`.
 
+**Optional fields per ingredient:** `emoji` (default `"🍽️"`),
+`brand` (default `null`), `translations` (per-locale display names,
+default `{}`), `retired_at` (0.7.55+ retire-not-delete marker,
+default `null`).
+
+### Retire-not-delete (0.7.55+)
+
+The pack catalogue is **append-only at the row level** — `external_id`
+slugs persist forever once introduced. To "drop" an ingredient from
+this season's recommendations, set `retired_at` to an ISO-8601
+timestamp; to bring it back next season, set `retired_at: null`.
+Never omit the row from the payload entirely.
+
+Why: server identity is stable across seasons. Users who declined
+the original retirement keep the row visible (no migration). Users
+who accepted the retirement and the curator later un-retires the
+same external_id will see a "Returning (N)" review section
+offering restore. This is much simpler than the alternative (delete
++ re-add with a different external_id), which would force the
+client to do migration / re-link / heuristic name matching.
+
+`retired_at` is wire-optional (default `null`). Old packs without
+the field decode as "active" client-side, matching pre-0.7.55
+behaviour. New retirements MUST set the field on the affected rows
+in the next published version.
+
 **Macro bounds (server-validated, fail-fast):**
 - `kcal_per_100g`: 0–900 (pure fat is 884 — never propose higher)
 - `fat_per_100g`, `protein_per_100g`, `carbs_per_100g`: 0–100
 
-**Category** must be one of: `MEAT`, `FISH_SEAFOOD`, `DAIRY`,
-`EGG`, `GRAIN`, `VEGETABLE`, `FRUIT`, `NUT_SEED`, `LEGUME`,
-`FAT_OIL`, `SWEET`, `BEVERAGE`, `PROCESSED`, `OTHER`. Anything
-else falls through to OTHER on the client.
+**Category** must be one of (canonical app-side enum names —
+mirrors `composeApp/.../data/LibraryModels.kt:IngredientCategory`):
+`MEAT`, `FISH_SEAFOOD`, `EGGS`, `DAIRY`, `VEGETABLES`, `FRUITS`,
+`GRAINS`, `LEGUMES`, `NUTS_SEEDS`, `FATS`, `CONDIMENTS`,
+`BEVERAGES`, `SUPPLEMENTS`, `PROCESSED`, `DESSERTS`, `OTHER`.
+Anything else falls through to OTHER on the client.
+
+**0.7.3 incident note (resolved 0.7.4):** earlier curator runs
+emitted singular variants — `VEGETABLE`, `FRUIT`, `EGG`, `GRAIN`,
+`LEGUME`, `NUT_SEED`, `FAT_OIL`, `SWEET`, `BEVERAGE`. Those work
+on the client today via an alias map in `IngredientCategory.fromString`,
+but new packs MUST emit the plural names so the wire contract
+matches the source of truth. The alias map is a compatibility
+shim for already-cloud-stored rows, not a green light to keep
+emitting the old shape.
 
 **`external_id`** must match `seed\.[A-Z]{2}\.[a-z0-9_-]+\.v\d+`.
 Format: `seed.{country}.{slug}.v{version-row-was-introduced-at}`.

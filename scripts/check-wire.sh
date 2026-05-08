@@ -53,8 +53,10 @@ INGREDIENT_REQUIRED=(
   "external_id"
 )
 INGREDIENT_OPTIONAL=(
-  "emoji"   # Kotlin default "🍽️" — kotlinx-serialization omits when default
-  "brand"   # nullable, kotlinx-serialization omits when null
+  "emoji"        # Kotlin default "🍽️" — kotlinx-serialization omits when default
+  "brand"        # nullable, kotlinx-serialization omits when null
+  "translations" # 0.6.x — per-locale display names map; default `{}` so often absent
+  "retired_at"   # 0.7.55+ retire-not-delete; default null so often absent
 )
 
 # Helpers ───────────────────────────────────────────────────────────────
