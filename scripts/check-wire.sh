@@ -26,9 +26,9 @@
 #   - Recipe entries (v1 ignores them).
 #   - Optional keys missing from row 0 specifically — kotlinx-
 #     serialization with default values OMITS keys when the value
-#     equals the default (e.g. `brand: String? = null` writes no
-#     `brand` field on the wire). The check tolerates that by
-#     classifying optional keys as "may be absent".
+#     equals the default (e.g. `emoji: String = "🍽️"` writes no
+#     `emoji` field on the wire when it's the default). The check
+#     tolerates that by classifying optional keys as "may be absent".
 set -euo pipefail
 
 COUNTRY="${1:?usage: $0 <country-code, e.g. UA|UK>}"
@@ -54,7 +54,6 @@ INGREDIENT_REQUIRED=(
 )
 INGREDIENT_OPTIONAL=(
   "emoji"        # Kotlin default "🍽️" — kotlinx-serialization omits when default
-  "brand"        # nullable, kotlinx-serialization omits when null
   "translations" # 0.6.x — per-locale display names map; default `{}` so often absent
   "retired_at"   # 0.7.55+ retire-not-delete; default null so often absent
 )

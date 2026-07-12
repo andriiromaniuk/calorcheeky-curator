@@ -248,7 +248,6 @@ The `SeedPackPayload` shape (matches the server's
     {
       "name": "Полуниця",
       "emoji": "🍓",
-      "brand": null,
       "kcal_per_100g": 32.0,
       "fat_per_100g": 0.3,
       "protein_per_100g": 0.7,
@@ -267,9 +266,8 @@ The `SeedPackPayload` shape (matches the server's
 `external_id`.
 
 **Optional fields per ingredient:** `emoji` (default `"🍽️"`),
-`brand` (default `null`), `translations` (per-locale display names,
-default `{}`), `retired_at` (0.7.55+ retire-not-delete marker,
-default `null`).
+`translations` (per-locale display names, default `{}`),
+`retired_at` (0.7.55+ retire-not-delete marker, default `null`).
 
 ### Retire-not-delete (0.7.55+)
 
