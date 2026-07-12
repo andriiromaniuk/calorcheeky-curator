@@ -56,6 +56,13 @@ INGREDIENT_OPTIONAL=(
   "emoji"        # Kotlin default "🍽️" — kotlinx-serialization omits when default
   "translations" # 0.6.x — per-locale display names map; default `{}` so often absent
   "retired_at"   # 0.7.55+ retire-not-delete; default null so often absent
+  # v38 pack-v2 (app ingredient-variants). Wire-OPTIONAL for backward
+  # compat: a pack without them applies as single unlabeled forms.
+  # Per-variant sub-keys (external_id/label/macros) aren't validated
+  # here — this script only classifies row-0 top-level keys; the
+  # publish step's server-side bounds still gate the numbers.
+  "variants"
+  "default_variant_external_id"
 )
 
 # Helpers ───────────────────────────────────────────────────────────────

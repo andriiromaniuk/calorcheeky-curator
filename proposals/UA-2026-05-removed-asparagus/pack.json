@@ -1,0 +1,66 @@
+{
+  "country": "UA",
+  "ingredients": [
+    {
+      "name": "Полуниця",
+      "emoji": "🍓",
+      "kcal_per_100g": 32,
+      "fat_per_100g": 0.3,
+      "protein_per_100g": 0.7,
+      "carbs_per_100g": 7.7,
+      "category": "FRUIT",
+      "external_id": "seed.UA.strawberry.v1"
+    },
+    {
+      "name": "Огірок",
+      "emoji": "🥒",
+      "kcal_per_100g": 16,
+      "fat_per_100g": 0.1,
+      "protein_per_100g": 0.7,
+      "carbs_per_100g": 3.6,
+      "category": "VEGETABLE",
+      "external_id": "seed.UA.cucumber.v1"
+    },
+    {
+      "name": "Редиска",
+      "emoji": "🫜",
+      "kcal_per_100g": 16,
+      "fat_per_100g": 0.1,
+      "protein_per_100g": 0.7,
+      "carbs_per_100g": 3.4,
+      "category": "VEGETABLE",
+      "external_id": "seed.UA.radish.v7"
+    },
+    {
+      "name": "Зелений горошок",
+      "emoji": "🫛",
+      "kcal_per_100g": 76,
+      "fat_per_100g": 0.2,
+      "protein_per_100g": 5.0,
+      "carbs_per_100g": 13.8,
+      "category": "VEGETABLE",
+      "external_id": "seed.UA.peas-green.v7"
+    },
+    {
+      "name": "Черешня",
+      "emoji": "🍒",
+      "kcal_per_100g": 50,
+      "fat_per_100g": 0.4,
+      "protein_per_100g": 1.1,
+      "carbs_per_100g": 11.5,
+      "category": "FRUIT",
+      "external_id": "seed.UA.cherry-sweet.v7"
+    },
+    {
+      "name": "Молода картопля",
+      "emoji": "🥔",
+      "kcal_per_100g": 61,
+      "fat_per_100g": 0.4,
+      "protein_per_100g": 2.4,
+      "carbs_per_100g": 12.4,
+      "category": "VEGETABLE",
+      "external_id": "seed.UA.potato-young.v7"
+    }
+  ],
+  "recipes": []
+}

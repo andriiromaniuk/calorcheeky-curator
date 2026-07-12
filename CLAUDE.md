@@ -252,9 +252,22 @@ The `SeedPackPayload` shape (matches the server's
       "fat_per_100g": 0.3,
       "protein_per_100g": 0.7,
       "carbs_per_100g": 7.7,
-      "category": "FRUIT",
+      "category": "FRUITS",
       "external_id": "seed.UA.strawberry.v18",
-      "retired_at": null
+      "retired_at": null,
+      "default_variant_external_id": "seed.UA.strawberry.v18:fresh",
+      "variants": [
+        {
+          "external_id": "seed.UA.strawberry.v18:fresh",
+          "label": "fresh",
+          "readiness": null,
+          "kcal_per_100g": 32.0,
+          "fat_per_100g": 0.3,
+          "protein_per_100g": 0.7,
+          "carbs_per_100g": 7.7,
+          "translations": { "uk": "свіжа" }
+        }
+      ]
     }
   ],
   "recipes": []
@@ -267,7 +280,55 @@ The `SeedPackPayload` shape (matches the server's
 
 **Optional fields per ingredient:** `emoji` (default `"🍽️"`),
 `translations` (per-locale display names, default `{}`),
-`retired_at` (0.7.55+ retire-not-delete marker, default `null`).
+`retired_at` (0.7.55+ retire-not-delete marker, default `null`),
+`variants` (v38 pack-v2 forms array, default `[]`) and
+`default_variant_external_id` (default `null`) — see the
+"Variants (pack v2, app schema v38+)" section below.
+
+### Variants (pack v2, app schema v38+)
+
+The app's library groups each food into ONE ingredient with one or
+more FORMS ("variants") that each carry their own per-100 g macros —
+"Chicken breast [raw|cooked]". Pack v2 mirrors that:
+
+- `variants`: 1–4 objects, each with:
+  - `external_id` (REQUIRED) — format `<ingredient external_id>:<label-slug>`,
+    e.g. `seed.UA.strawberry.v18:fresh`. Same append-only rule as
+    ingredient ids: once minted, a variant id persists forever;
+    updates keep the OLD id.
+  - `label` (REQUIRED) — short lowercase canonical-English form label
+    ("raw", "cooked", "canned in water", "20%"). `""` is allowed ONLY
+    when it is the ingredient's sole variant (single-form food).
+  - `readiness` (optional) — one of the app's enum names `RAW`,
+    `COOKED`, `BOILED`, `FRIED`, `BAKED`, `GRILLED`, `STEWED`,
+    `DRIED`, `CANNED`, `SMOKED`, `PICKLED`, or `null` for
+    product-kind labels (fat percentages etc.).
+  - `kcal_per_100g` / `fat_per_100g` / `protein_per_100g` /
+    `carbs_per_100g` (REQUIRED) — same bounds as the ingredient-level
+    fields.
+  - `translations` (optional) — per-locale LABEL translations.
+    Ukrainian labels are GENDERED and hand-authored ("сира" for
+    grudka, "сирий" for farsh) — never machine-compose them.
+- `default_variant_external_id`: which form the app preselects.
+  Authoring rule: meats/fish/grains/legumes → the raw/dry form;
+  dairy fat-% families → the most common percentage.
+- Authoring guidance (mirrors the app's define-ingredient rules):
+  include `raw` plus ONE cooked-family form when preparation moves
+  the per-100 g macros by roughly 10 % or more (meat, fish, grains,
+  legumes, leafy greens); include `dried`/`canned` only when the food
+  is commonly sold that way; single-form foods (oils, dairy, fruit,
+  nuts) emit ONE variant with `label: ""`.
+- The ingredient-level flat macro fields MUST mirror the default
+  variant's profile (older readers use them).
+- The ingredient `name` stays GENERIC — never encode the form into it
+  ("Chicken breast", not "Chicken breast, raw").
+
+**⚠️ Deploy order:** the pack DTOs have no version handshake. The
+operator's devices must run app schema v38+ (ingredient-variants)
+BEFORE the first v2 pack (any pack with a non-empty `variants`
+array) is published — a v2 pack reaching a pre-v38 app fails to
+apply variant-granularly. v1-shaped packs (no `variants`) remain
+valid; the v38 app applies them as single unlabeled forms.
 
 ### Retire-not-delete (0.7.55+)
 
