@@ -1,0 +1,27 @@
+{
+  "name": "translate_products",
+  "description": "Return product-name translations, in the same order as the input.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "translated_name": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          "required": [
+            "translated_name"
+          ]
+        }
+      }
+    },
+    "required": [
+      "items"
+    ]
+  }
+}

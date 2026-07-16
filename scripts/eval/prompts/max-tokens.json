@@ -1,0 +1,8 @@
+{
+  "meal":       768,
+  "ingredient": 256,
+  "recipe":     2048,
+  "advise":     4096,
+  "translate":  1024,
+  "vision":     1536
+}

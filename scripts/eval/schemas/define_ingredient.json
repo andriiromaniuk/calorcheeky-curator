@@ -1,0 +1,263 @@
+{
+  "name": "define_ingredient",
+  "description": "Return a single ingredient's per-100g macro profile.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "maxLength": 60
+      },
+      "category": {
+        "type": "string",
+        "enum": [
+          "MEAT",
+          "FISH_SEAFOOD",
+          "EGGS",
+          "DAIRY",
+          "VEGETABLES",
+          "FRUITS",
+          "GRAINS",
+          "LEGUMES",
+          "NUTS_SEEDS",
+          "FATS",
+          "CONDIMENTS",
+          "BEVERAGES",
+          "PROCESSED",
+          "DESSERTS",
+          "OTHER"
+        ]
+      },
+      "kcal_per_100g": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "protein_per_100g": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "fat_per_100g": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "carbs_per_100g": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "emoji": {
+        "type": "string",
+        "description": "Single emoji that best represents this specific food or dish. Always pick the MOST SPECIFIC glyph — e.g. for fish/cod/salmon use 🐟, for beef/steak use 🥩, for chicken use 🍗, for eggs use 🥚, for pasta use 🍝, for salad use 🥗, for avocado use 🥑. NEVER output 🍽️ (the generic plate) unless the dish genuinely has no better match. Output exactly one Unicode emoji — no text, no multiple glyphs.",
+        "maxLength": 12,
+        "examples": [
+          "🍞",
+          "🥪",
+          "🍕",
+          "🍔",
+          "🍟",
+          "🍳",
+          "🥚",
+          "🧀",
+          "🥛",
+          "🥗",
+          "🍝",
+          "🍜",
+          "🍚",
+          "🍣",
+          "🍗",
+          "🥩",
+          "🥓",
+          "🍌",
+          "🍎",
+          "🍓",
+          "🍇",
+          "☕",
+          "🍵",
+          "🥤",
+          "🧃",
+          "🍪",
+          "🍫",
+          "🍰",
+          "🍿",
+          "🍱",
+          "🥣",
+          "🍲",
+          "🍛",
+          "🥘",
+          "🫕",
+          "🥡",
+          "🥫",
+          "🥐",
+          "🥯",
+          "🥖",
+          "🫓",
+          "🥨",
+          "🧇",
+          "🥞",
+          "🌭",
+          "🌮",
+          "🌯",
+          "🫔",
+          "🥙",
+          "🥟",
+          "🧆",
+          "🍙",
+          "🍘",
+          "🍥",
+          "🍢",
+          "🍖",
+          "🦃",
+          "🐟",
+          "🍤",
+          "🦞",
+          "🦀",
+          "🦐",
+          "🦑",
+          "🐙",
+          "🦪",
+          "🧈",
+          "🥑",
+          "🥦",
+          "🥕",
+          "🥬",
+          "🍅",
+          "🥒",
+          "🥔",
+          "🍆",
+          "🌶️",
+          "🫑",
+          "🌽",
+          "🍠",
+          "🧄",
+          "🧅",
+          "🫚",
+          "🍄",
+          "🫒",
+          "🌿",
+          "🫛",
+          "🫘",
+          "🥜",
+          "🌰",
+          "🍏",
+          "🍐",
+          "🍊",
+          "🍋",
+          "🫐",
+          "🍈",
+          "🍉",
+          "🍑",
+          "🍒",
+          "🥝",
+          "🍍",
+          "🥭",
+          "🥥",
+          "🍦",
+          "🍧",
+          "🍨",
+          "🎂",
+          "🧁",
+          "🥧",
+          "🍩",
+          "🍬",
+          "🍭",
+          "🍮",
+          "🍡",
+          "🥮",
+          "🥠",
+          "🍯",
+          "🫙",
+          "🧋",
+          "🧉",
+          "🫖",
+          "🍾",
+          "🍶",
+          "🍺",
+          "🍻",
+          "🍷",
+          "🥂",
+          "🍸",
+          "🍹",
+          "🥃",
+          "🍽️"
+        ]
+      },
+      "variants": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 4,
+        "items": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "readiness": {
+              "type": "string",
+              "enum": [
+                "raw",
+                "cooked",
+                "boiled",
+                "fried",
+                "baked",
+                "grilled",
+                "stewed",
+                "dried",
+                "canned",
+                "smoked",
+                "pickled"
+              ]
+            },
+            "kcal_per_100g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "protein_per_100g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "fat_per_100g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "carbs_per_100g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "label",
+            "kcal_per_100g",
+            "protein_per_100g",
+            "fat_per_100g",
+            "carbs_per_100g"
+          ]
+        }
+      },
+      "default_index": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3,
+        "description": "Index into `variants` of the form the user most commonly logs (default: the raw form)."
+      }
+    },
+    "required": [
+      "name",
+      "category",
+      "kcal_per_100g",
+      "protein_per_100g",
+      "fat_per_100g",
+      "carbs_per_100g",
+      "emoji",
+      "variants",
+      "default_index"
+    ]
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "name": "log_food",
+  "description": "Log parsed food items with their nutritional content.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "reasoning": {
+        "type": "string",
+        "maxLength": 600,
+        "description": "IMAGE inputs ONLY: before listing foods, briefly reason (<=600 chars) — identify each visible item, estimate its WEIGHT IN GRAMS using visible scale references (plate/bowl diameter, cutlery, a hand, standard packaging), then note the calorie density you will apply. Leave empty / omit entirely for text input."
+      },
+      "foods": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "grams": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 2000
+            },
+            "kcal": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "protein_g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "fat_g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "carbs_g": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 500
+            },
+            "emoji": {
+              "type": "string",
+              "description": "Single emoji that best represents this specific food or dish. Always pick the MOST SPECIFIC glyph — e.g. for fish/cod/salmon use 🐟, for beef/steak use 🥩, for chicken use 🍗, for eggs use 🥚, for pasta use 🍝, for salad use 🥗, for avocado use 🥑. NEVER output 🍽️ (the generic plate) unless the dish genuinely has no better match. Output exactly one Unicode emoji — no text, no multiple glyphs.",
+              "maxLength": 12,
+              "examples": [
+                "🍞",
+                "🥪",
+                "🍕",
+                "🍔",
+                "🍟",
+                "🍳",
+                "🥚",
+                "🧀",
+                "🥛",
+                "🥗",
+                "🍝",
+                "🍜",
+                "🍚",
+                "🍣",
+                "🍗",
+                "🥩",
+                "🥓",
+                "🍌",
+                "🍎",
+                "🍓",
+                "🍇",
+                "☕",
+                "🍵",
+                "🥤",
+                "🧃",
+                "🍪",
+                "🍫",
+                "🍰",
+                "🍿",
+                "🍱",
+                "🥣",
+                "🍲",
+                "🍛",
+                "🥘",
+                "🫕",
+                "🥡",
+                "🥫",
+                "🥐",
+                "🥯",
+                "🥖",
+                "🫓",
+                "🥨",
+                "🧇",
+                "🥞",
+                "🌭",
+                "🌮",
+                "🌯",
+                "🫔",
+                "🥙",
+                "🥟",
+                "🧆",
+                "🍙",
+                "🍘",
+                "🍥",
+                "🍢",
+                "🍖",
+                "🦃",
+                "🐟",
+                "🍤",
+                "🦞",
+                "🦀",
+                "🦐",
+                "🦑",
+                "🐙",
+                "🦪",
+                "🧈",
+                "🥑",
+                "🥦",
+                "🥕",
+                "🥬",
+                "🍅",
+                "🥒",
+                "🥔",
+                "🍆",
+                "🌶️",
+                "🫑",
+                "🌽",
+                "🍠",
+                "🧄",
+                "🧅",
+                "🫚",
+                "🍄",
+                "🫒",
+                "🌿",
+                "🫛",
+                "🫘",
+                "🥜",
+                "🌰",
+                "🍏",
+                "🍐",
+                "🍊",
+                "🍋",
+                "🫐",
+                "🍈",
+                "🍉",
+                "🍑",
+                "🍒",
+                "🥝",
+                "🍍",
+                "🥭",
+                "🥥",
+                "🍦",
+                "🍧",
+                "🍨",
+                "🎂",
+                "🧁",
+                "🥧",
+                "🍩",
+                "🍬",
+                "🍭",
+                "🍮",
+                "🍡",
+                "🥮",
+                "🥠",
+                "🍯",
+                "🫙",
+                "🧋",
+                "🧉",
+                "🫖",
+                "🍾",
+                "🍶",
+                "🍺",
+                "🍻",
+                "🍷",
+                "🥂",
+                "🍸",
+                "🍹",
+                "🥃",
+                "🍽️"
+              ]
+            },
+            "low_confidence": {
+              "type": "boolean",
+              "description": "true when: (1) this row is a decomposed add-in of a variable-preparation food (e.g. milk in 'americano with milk') and the user should verify the amount, OR (2) this row was read from a nutrition label where one or more digits were hard to distinguish — the user should retake the photo for a clearer read. false for all other rows."
+            },
+            "request_text": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The user's own wording for JUST this item, spelling/grammar corrected, same language (never translated), proper nouns preserved verbatim. Omit when there is no user-typed text for this item (e.g. an image with no caption)."
+            },
+            "library_name": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "EXACT ingredient name copied VERBATIM from the LIBRARY block when this food matches one of the listed ingredients. Omit when the food isn't in the list."
+            },
+            "variant": {
+              "type": "string",
+              "maxLength": 40,
+              "description": "EXACT form label copied VERBATIM from that ingredient's bracketed label list — the form the food was eaten in. Omit when the ingredient is listed without brackets or the food isn't in the list."
+            },
+            "readiness": {
+              "type": "string",
+              "enum": [
+                "raw",
+                "cooked",
+                "boiled",
+                "fried",
+                "baked",
+                "grilled",
+                "stewed",
+                "dried",
+                "canned",
+                "smoked",
+                "pickled"
+              ],
+              "description": "Preparation state of the food AS EATEN. Always set when determinable, even for foods not in the library."
+            }
+          },
+          "required": [
+            "name",
+            "grams",
+            "kcal",
+            "protein_g",
+            "fat_g",
+            "carbs_g",
+            "emoji",
+            "low_confidence"
+          ]
+        }
+      },
+      "refusal_reason": {
+        "type": "string",
+        "enum": [
+          "barcode_only",
+          "zero_nutrition"
+        ],
+        "description": "Set when foods=[] for a STRUCTURAL reason: 'barcode_only' = user photographed a barcode/back-of-package; 'zero_nutrition' = real food/drink recognised but genuinely calorie-free (black tea, plain water, diet soda). Omit for non-food text or normal parsing."
+      }
+    },
+    "required": [
+      "foods"
+    ]
+  }
+}
