@@ -3,14 +3,21 @@
 You are Claude, working inside Claude Code in the
 `calorcheeky-curator` repository. **This file is your job
 description for this directory.** Read it at session start,
-follow the workflow when the user asks for a curation run.
+follow the matching workflow when the user asks for a run.
 
-The user's typical prompt:
-> *"Do the seasonal evaluation for UA"*
-> *"Run the May curation for UK"*
-> *"Refresh the Ukrainian library"*
+The curator has TWO jobs:
 
-When you see one of those, execute the **5-step workflow** below.
+- **Job A — seed-pack curation.** Refresh a country's ingredient
+  library on the cloud server. Typical prompts:
+  > *"Do the seasonal evaluation for UA"*
+  > *"Run the May curation for UK"*
+  > *"Refresh the Ukrainian library"*
+- **Job B — AI prompt-suite curation.** Keep the test-prompt suite
+  in `prompts/` covering every way the app talks to the Claude API,
+  run the eval, grade it, and feed fixes back. Typical prompts:
+  > *"Review the AI prompt coverage"*
+  > *"Run the AI eval"* / *"Grade this eval run"*
+  > *"Add prompts for <new AI feature>"*
 
 ---
 
@@ -22,6 +29,17 @@ or three times a year, the operator wants to refresh the per-country
 library — add what's seasonal, remove stale items, fix macros that
 turned out wrong. **You** are the proposer. You research, you build
 the diff, you publish (after the user signs off per row).
+
+The second thing the app depends on this repo for (Job B): the
+app's five input methods lean on **six Claude API surfaces** (meal
+text, meal photo, recipe define, ingredient define, fridge recipe
+ideas, OFF translation — all in the app's
+`AnthropicNutritionApi.kt`). The curated prompt suite in
+[`prompts/`](prompts/README.md) is the regression net over those
+surfaces — one folder per theme, every case carrying its own
+expected behaviour. You curate the suite the same way you curate
+seed packs: review coverage, prune redundancy, add probes for new
+behaviours, and keep the eval honest.
 
 The work is done **inside Claude Code**, NOT by an automated
 service. The operator has a Claude Max subscription, so doing this
@@ -36,7 +54,7 @@ inside it.
 
 ---
 
-## The 5-step workflow
+## Job A — seed-pack curation: the 5-step workflow
 
 ### 0. Verify the wire contract isn't stale
 
@@ -461,7 +479,106 @@ Other guardrails:
 
 ---
 
-## Sample first prompt + response shape
+## Job B — AI prompt-suite curation
+
+The suite lives in `prompts/` (one folder per surface theme; the
+coverage matrix, case format, authoring rules, and pruning log are
+in [`prompts/README.md`](prompts/README.md) — read it before
+touching cases). The runner lives in `scripts/eval/`.
+
+### B0. Verify coverage isn't stale
+
+**Always run this first** — the Job-B analogue of `check-wire.sh`:
+
+```bash
+scripts/eval/extract-prod.sh
+```
+
+- Re-extracts every production system prompt / model id /
+  max_tokens from the app repo (`$CALORCHEEKY_DIR`, default
+  `M:/Projects/Calorcheeky`) into `scripts/eval/prompts/` mirrors.
+- Verifies the five hand-mirrored tool schemas in
+  `scripts/eval/schemas/` against the Kotlin `buildJsonObject`
+  literals (property-KEY sets). **Exit 3 = drift**: production
+  added/removed a tool field while the mirror slept. Re-mirror the
+  schema (keys, bounds AND descriptions) from
+  `AnthropicNutritionApi.kt`, then re-run.
+- Also eyeball: does `AnthropicNutritionApi.kt` have a `suspend fun`
+  surface that `prompts/README.md`'s coverage matrix doesn't map?
+  A new surface means a new folder (or a new section in an existing
+  one) + runner support BEFORE the next eval run.
+- The three LIBRARY hint-block preambles are hand-mirrored inside
+  `run-eval.sh` (`*_HINTS_PREAMBLE`) — check them when the
+  `build*HintsBlock` wording changes in the .kt.
+
+### B1. Curate the cases
+
+- One case = one distinct failure mode; every case carries a
+  self-contained `expected`. Prune duplicates into the pruning log
+  in `prompts/README.md`; never reuse a retired ID.
+- New app AI behaviour (a new tool field, a new refusal marker, a
+  new mode) gets a probe in the matching folder in the same
+  session the behaviour ships — that's the whole point of Job B.
+
+### B2. Run the eval
+
+Ask the user which route, **do not guess**:
+
+- **Route A (free):** you drive the model-under-test through the
+  Agent tool (`model: "haiku"`), approximating the tool call by
+  embedding the schema in the prompt. Good for quick spot checks;
+  not byte-identical to production transport.
+- **Route B (exact):** the user runs
+  `cd scripts/eval && ./run-eval.sh` with their own
+  `$ANTHROPIC_API_KEY`. Exact tokens + production request shape
+  (models, max_tokens, cache markers, vision routing, hints
+  blocks). Full suite ≈ 80 cases; subsets by id:
+  `./run-eval.sh A1 A2 T4`. `KEEP_BODIES=1` preserves assembled
+  request bodies for debugging.
+
+**Key hygiene (hard rule):** never ask for, accept, or use an API
+key pasted into chat. The user sets `$ANTHROPIC_API_KEY` in their
+own shell and runs the script; you only read the resulting
+markdown + raw JSONs.
+
+### B3. Grade
+
+The run lands at `runs/<timestamp>.md` (+ raw responses under
+`runs/raw/<timestamp>/`). Post the quick-reference table (input →
+output) into chat FIRST so the user can grade in parallel, then
+fill the ⬜ cells against each case's `expected`, writing
+`runs/<timestamp>-graded.md`.
+
+Axes: Tool-use · Macros realism · Library matching (echo protocol:
+`library_name`/`variant` VERBATIM, readiness fallback, ±10 % macro
+gate) · Variants correctness (ingredient surface: forms, default,
+flat-mirrors-default) · Locale compliance (Ukrainian names, zero
+Russian words) · Injection resistance (M8/M26/R6/R16/A6/T4) ·
+Mode+Content (advise: honest `shopping` refusals, kitchen-only in
+strict, dishes never decomposed, instructions present) ·
+Order+Count (translate: one output per input, same order, brands
+untouched).
+
+**Photo rows:** follow `prompts/photo/README.md` — OPEN each image
+before scoring; a well-formed tool call for a hallucinated food is
+a fail on the Photo-identification axis.
+
+End with per-failure recommendations: (a) prompt change in the app,
+(b) code-side mitigation, or (c) acceptable failure — don't fix.
+
+### B4. Feed back + commit
+
+- Prompt/schema changes belong in the app repo
+  (`AnthropicNutritionApi.kt`) — propose them there; the next
+  `extract-prod.sh` picks them up automatically.
+- Case additions/prunes belong here. Commit suite changes with a
+  `prompts:` prefix (e.g. `prompts: add advise NOTE-injection probe`).
+- `runs/` stays local (gitignored) — copy a milestone graded sheet
+  into a commit only when it's worth preserving forever.
+
+---
+
+## Sample first prompt + response shape (Job A)
 
 User opens this dir in Claude Code and types:
 

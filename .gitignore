@@ -22,3 +22,14 @@ src/   # legacy Python skeleton; safe to rm -rf when convenient
 .vscode/
 *.swp
 .DS_Store
+
+# Eval artifacts — bulky per-run outputs, local working state.
+# The graded .md sheets are the operator's local history; copy one
+# into a commit deliberately if a run is worth preserving forever.
+runs/*
+!runs/.gitkeep
+!runs/TEMPLATE.md
+
+# Personal food photos used by the photo suite — never publish.
+prompts/photo/images/*
+!prompts/photo/images/.gitkeep

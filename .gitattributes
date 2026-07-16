@@ -1,0 +1,10 @@
+# Bash scripts must stay LF — a CRLF checkout breaks shebangs and
+# case-statements under strict shells.
+*.sh text eol=lf
+
+# The eval machinery must be byte-stable: the prompt mirrors are
+# regenerated with LF by extract-prod.sh on every run (CRLF checkout
+# would show phantom diffs after each run), and the suite files are
+# fed to jq verbatim.
+scripts/eval/** text eol=lf
+prompts/**/cases.json text eol=lf

@@ -1,15 +1,30 @@
 # calorcheeky-curator
 
-Operator's runbook + thin bash CLI for publishing seasonal seed
-packs to the Calorcheeky cloud-sync server. The actual AI work
-(researching what's in season, drafting the diff, writing the
-report) is done **inside Claude Code** — no Streamlit, no
-Anthropic API key, no Python. Just **a runbook
-([CLAUDE.md](./CLAUDE.md)) + three bash scripts**.
+Operator's runbook + thin bash CLI for the two things the
+Calorcheeky app outsources to a human-plus-Claude loop:
 
-This repo is **separate** from the main `calorcheeky` app. It
-talks to that app's running server's `/admin/seed-pack/*`
-endpoints over HTTPS. Phones don't run this — only the operator.
+- **Seed packs (Job A):** publishing seasonal per-country
+  ingredient libraries to the cloud-sync server. The AI work
+  (researching what's in season, drafting the diff, writing the
+  report) is done **inside Claude Code** — no Streamlit, no
+  Anthropic API key needed for the research itself.
+- **AI prompt suite (Job B):** the curated regression suite over
+  **every way the app talks to the Claude API** — six surfaces
+  (meal text, meal photo, recipe define, ingredient define, fridge
+  recipe ideas, OFF translation). Cases live in
+  [`prompts/`](prompts/README.md); the runner in
+  [`scripts/eval/`](scripts/eval/) replays them against the
+  production prompts + schemas (auto-extracted from the app repo
+  on every run) and produces a gradeable scoring sheet.
+
+Both jobs follow the runbook ([CLAUDE.md](./CLAUDE.md)).
+
+This repo is **separate** from the main `calorcheeky` app. Job A
+talks to the app server's `/admin/seed-pack/*` endpoints over
+HTTPS; Job B reads the app's source checkout (`$CALORCHEEKY_DIR`,
+default `M:/Projects/Calorcheeky`) and — for eval runs — the
+operator's own `$ANTHROPIC_API_KEY`. Phones don't run this — only
+the operator.
 
 ---
 
@@ -81,6 +96,23 @@ workflow:
 
 Each phone running ≥0.6 sees the prompt on its next sync.
 
+### Run the AI prompt eval (Job B)
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-…"   # your key, your shell — never paste in chat
+cd scripts/eval
+./run-eval.sh                          # whole suite (~80 cases + photos)
+./run-eval.sh M3 A1 T4                 # or a subset by id
+```
+
+The runner re-extracts the production prompts / models /
+max_tokens from the app checkout first (and fails loud if the
+hand-mirrored tool schemas drifted), then writes
+`runs/<timestamp>.md` for grading. Say *"Grade this eval run"* in
+Claude Code and the runbook's Job B section takes over. Photo
+cases are auto-discovered from `prompts/photo/images/` (gitignored
+— your food photos stay local).
+
 ---
 
 ## Architecture
@@ -127,11 +159,27 @@ calorcheeky-curator/
 ├── README.md              # ← you are here
 ├── .env.example           # Template — copy to .env
 ├── .gitignore
+├── prompts/               # Job B — the AI prompt suite (see prompts/README.md)
+│   ├── README.md          #   coverage matrix + authoring rules + pruning log
+│   ├── text/cases.json    #   meal-text parse (M*)
+│   ├── photo/             #   photo parse protocol; images/ is a gitignored drop-zone (P*)
+│   ├── library/cases.json #   ingredient + recipe define + echo-protocol (I*, R*, V*)
+│   ├── recipe-ideas/cases.json  # fridge advisor (A*)
+│   └── translate/cases.json     # OFF translation (T*)
 ├── scripts/
+│   ├── check-wire.sh      # Job A step 0 — wire-contract drift guard
 │   ├── fetch-pack.sh      # GET /admin/seed-pack/{country}
-│   ├── publish-pack.sh    # POST /admin/seed-pack/{country}
-│   └── pack-history.sh    # GET /admin/seed-pack/{country}/history
-└── proposals/             # One folder per curation run, checked in
+│   ├── publish-pack.sh    # POST /admin/seed-pack/{country} (+ auto-verify)
+│   ├── verify-publish.sh  # post-publish data integrity check
+│   ├── pack-history.sh    # GET /admin/seed-pack/{country}/history
+│   └── eval/              # Job B — the eval runner
+│       ├── run-eval.sh    #   replays the suite against the Anthropic API
+│       ├── extract-prod.sh#   prompt/model/max_tokens mirrors + schema drift guard
+│       ├── summarize.sh   #   raw responses → markdown scoring sheet
+│       ├── prompts/       #   auto-generated production mirrors (tracked: drift is diffable)
+│       └── schemas/       #   hand-mirrored tool schemas (guarded by extract-prod)
+├── runs/                  # Eval outputs (gitignored; local history)
+└── proposals/             # One folder per Job A curation run, checked in
     └── <COUNTRY>-<YYYY-MM>/
         ├── report.md        ← human review surface, audit trail
         └── pack.json        ← canonical proposed payload
