@@ -532,9 +532,13 @@ Ask the user which route, **do not guess**:
   `cd scripts/eval && ./run-eval.sh` with their own
   `$ANTHROPIC_API_KEY`. Exact tokens + production request shape
   (models, max_tokens, cache markers, vision routing, hints
-  blocks). Full suite ≈ 80 cases; subsets by id:
-  `./run-eval.sh A1 A2 T4`. `KEEP_BODIES=1` preserves assembled
-  request bodies for debugging.
+  blocks). Full suite ≈ 80 cases; subsets by id or surface name:
+  `./run-eval.sh A1 T4` / `./run-eval.sh advise`. Model A/B:
+  `--model sonnet` reroutes TEXT calls to the production vision
+  model (thinking disabled, like the app's premium toggle) and
+  tags the run name; default is the production Haiku.
+  `KEEP_BODIES=1` preserves assembled request bodies for
+  debugging.
 
 **Key hygiene (hard rule):** never ask for, accept, or use an API
 key pasted into chat. The user sets `$ANTHROPIC_API_KEY` in their

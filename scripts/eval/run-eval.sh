@@ -14,8 +14,11 @@
 # Usage:
 #   export ANTHROPIC_API_KEY="sk-ant-…your-key…"
 #   cd scripts/eval
-#   ./run-eval.sh                 # the whole suite
-#   ./run-eval.sh M3 A1 T4        # subset by id
+#   ./run-eval.sh                       # the whole suite, production models
+#   ./run-eval.sh M3 A1 T4              # subset by id
+#   ./run-eval.sh advise                # a whole surface (meal / recipe /
+#                                       #   ingredient / advise / translate)
+#   ./run-eval.sh --model sonnet advise # A/B the text model (see below)
 #
 # Requirements: bash, curl, jq. Git Bash on Windows is fine.
 # The calorcheeky app checkout must exist at $CALORCHEEKY_DIR
@@ -38,6 +41,25 @@ if ! command -v jq >/dev/null 2>&1; then
     exit 1
 fi
 
+# ── Args ────────────────────────────────────────────────────────
+# Selectors are case ids (M3, A1) and/or surface names (meal /
+# recipe / ingredient / advise / translate); no selector = whole
+# suite. `--model` overrides the TEXT model (photos always run the
+# production vision model):
+#   --model haiku      → the production text model (the default)
+#   --model sonnet     → the production vision model id — the same
+#                        reroute as the app's premium-text toggle
+#   --model <full-id>  → any Anthropic model id, verbatim
+MODEL_OVERRIDE=""
+RAW_SUBSET=()
+while (( $# )); do
+    case "$1" in
+        --model)   MODEL_OVERRIDE="${2:?--model needs a value}"; shift 2 ;;
+        --model=*) MODEL_OVERRIDE="${1#--model=}"; shift ;;
+        *)         RAW_SUBSET+=("$1"); shift ;;
+    esac
+done
+
 # ── Paths ───────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -46,7 +68,11 @@ PROMPTS_DIR="$SCRIPT_DIR/prompts"     # auto-generated production mirrors
 SCHEMAS_DIR="$SCRIPT_DIR/schemas"
 RUNS_DIR="$REPO_DIR/runs"
 
-TIMESTAMP="$(date +'%Y-%m-%d-%H%M')"
+# Model-override runs get a tagged name so an A/B pair is
+# self-describing side by side in runs/.
+RUN_TAG=""
+[[ -n "$MODEL_OVERRIDE" ]] && RUN_TAG="-${MODEL_OVERRIDE//[^a-zA-Z0-9._-]/-}"
+TIMESTAMP="$(date +'%Y-%m-%d-%H%M')$RUN_TAG"
 RUN_RAW_DIR="$RUNS_DIR/raw/$TIMESTAMP"
 RUN_MD="$RUNS_DIR/$TIMESTAMP.md"
 mkdir -p "$RUN_RAW_DIR"
@@ -68,8 +94,19 @@ jqr() { jq -r "$@" | tr -d '\r'; }
 # current production. See extract-prod.sh.
 "$SCRIPT_DIR/extract-prod.sh"
 
-TEXT_MODEL="$(jqr '.text'   "$PROMPTS_DIR/models.json")"
+PROD_TEXT_MODEL="$(jqr '.text'   "$PROMPTS_DIR/models.json")"
 VISION_MODEL="$(jqr '.vision' "$PROMPTS_DIR/models.json")"
+case "$MODEL_OVERRIDE" in
+    ""|haiku) TEXT_MODEL="$PROD_TEXT_MODEL" ;;
+    sonnet)   TEXT_MODEL="$VISION_MODEL" ;;
+    *)        TEXT_MODEL="$MODEL_OVERRIDE" ;;
+esac
+# Console cost estimate follows the known aliases; custom ids keep
+# Haiku rates (the run sheet's footer carries the same caveat).
+if [[ "$TEXT_MODEL" == "$VISION_MODEL" ]]; then
+    PRICE_INPUT_PER_M=3.0
+    PRICE_OUTPUT_PER_M=15.0
+fi
 
 # ── Build the effective test manifest ───────────────────────────
 # Concatenate every suite folder's cases.json (id-bearing entries;
@@ -112,14 +149,28 @@ jq -s --argjson photos "$PHOTO_JSON" \
     '[ .[][] | select(.id) ] + $photos' \
     "${CASE_FILES[@]}" > "$EFFECTIVE_TESTS"
 
-# ── Args: subset of test IDs, or all ────────────────────────────
-SUBSET=("$@")
-if (( ${#SUBSET[@]} == 0 )); then
+# ── Test selection: expand surface names, default to all ───────
+SUBSET=()
+if (( ${#RAW_SUBSET[@]} == 0 )); then
     mapfile -t SUBSET < <(jq -r '.[].id' "$EFFECTIVE_TESTS")
+else
+    for sel in "${RAW_SUBSET[@]}"; do
+        case "$sel" in
+            meal|recipe|ingredient|advise|translate)
+                while IFS= read -r id; do SUBSET+=("$id"); done \
+                    < <(jq -r --arg s "$sel" '.[] | select(.surface == $s) | .id' "$EFFECTIVE_TESTS" | tr -d '\r')
+                ;;
+            *) SUBSET+=("$sel") ;;
+        esac
+    done
 fi
 
 echo "Running ${#SUBSET[@]} test(s) ($PHOTO_COUNT photos) → $RUN_RAW_DIR"
-echo "  text model: $TEXT_MODEL · vision model: $VISION_MODEL"
+if [[ -n "$MODEL_OVERRIDE" ]]; then
+    echo "  text model: $TEXT_MODEL (--model $MODEL_OVERRIDE) · vision model: $VISION_MODEL"
+else
+    echo "  text model: $TEXT_MODEL · vision model: $VISION_MODEL"
+fi
 
 # ── System-prompt composition ───────────────────────────────────
 # Mirrors the build*SystemPrompt functions: parts joined with "\n\n"
@@ -234,10 +285,14 @@ run_test() {
 
     # Model routing mirrors production: photos → VISION_MODEL with
     # thinking disabled (Sonnet defaults adaptive thinking on, which
-    # is incompatible with the forced tool_choice); text → TEXT_MODEL.
+    # is incompatible with the forced tool_choice); text → TEXT_MODEL,
+    # and any non-Haiku text model also gets thinking disabled — the
+    # same handling as the app's premium reroute (`putTextModel`).
     local model="$TEXT_MODEL" thinking_json="null"
     if [[ -n "$photo" ]]; then
         model="$VISION_MODEL"
+        thinking_json='{ "type": "disabled" }'
+    elif [[ "$TEXT_MODEL" != "$PROD_TEXT_MODEL" ]]; then
         thinking_json='{ "type": "disabled" }'
     fi
 
@@ -304,6 +359,7 @@ run_test() {
         jq -n \
             --arg model "$model" \
             --argjson max_tokens "$max_tokens" \
+            --argjson thinking "$thinking_json" \
             --arg system "$system_text" \
             --argjson content "$content_json" \
             --slurpfile schema "$schema_file" \
@@ -316,7 +372,8 @@ run_test() {
                 tools: $schema,
                 tool_choice: { type: "tool", name: $tool_name },
                 messages: [ { role: "user", content: $content } ]
-            }' > "$body_file"
+            } + (if $thinking != null then { thinking: $thinking } else {} end)' \
+            > "$body_file"
     fi
 
     # KEEP_BODIES=1 preserves the assembled request next to the raw
