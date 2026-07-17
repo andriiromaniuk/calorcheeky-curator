@@ -14,7 +14,7 @@
     "expected": "HONEST REFUSAL: mode=\"shopping\" — nothing beyond snacks and drinks, no real meal composable. rationale ≤200 chars explaining why; a to-buy list of concrete items each with a ≤120-char reason (schema caps silently at 10). Never a forced junk recipe." },
   { "id": "A3", "surface": "advise",
     "input": "<request>\n- source mode: mix\n- meal category: grain-based dishes such as rice, pasta, oats or quinoa\n- to-buy list: wanted\n</request>\n\n<on_hand>{\"ingredients\":[\"canned tuna\",\"pasta\"],\"ready_meals\":[]}</on_hand>",
-    "expected": "mode=\"recipe\"; tuna + pasta form the CORE of every recipe, plus a few sensible extras; every recipe ≤800 kcal/portion; shopping (3-8 items) lists exactly those extras to buy — never tuna, pasta, or pantry staples; category fits grain-based." },
+    "expected": "mode=\"recipe\"; tuna + pasta form the CORE of every recipe, plus a few sensible extras; every recipe ≤800 kcal/portion; shopping lists exactly those extras to buy — never tuna, pasta, or pantry staples; category fits grain-based." },
   { "id": "A4", "surface": "advise",
     "input": "<request>\n- source mode: discover\n- meal category: breakfast dishes\n- to-buy list: not wanted\n</request>\n\n<on_hand>{\"ingredients\":[\"oats\"],\"ready_meals\":[]}</on_hand>",
     "expected": "mode=\"recipe\"; recipes are something DIFFERENT — most/all ingredients new, oats at most an accent (not the base of every recipe); all recipes clearly breakfast; 2-3 distinct options with varied preparation styles." },
