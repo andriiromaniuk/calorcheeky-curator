@@ -213,13 +213,14 @@ compose_system() {
     printf '%s' "$out"
 }
 
-# ── LIBRARY hint-block preambles ────────────────────────────────
+# ── <library> hint-block preambles ──────────────────────────────
 # Hand-mirrored from buildMealHintsBlock / buildRecipeHintsBlock /
 # buildFridgeRecipeHintsBlock in AnthropicNutritionApi.kt — update
-# alongside them if the wording changes there.
-MEAL_HINTS_PREAMBLE="LIBRARY (the user's saved ingredient vocabulary; bracketed values are that ingredient's saved FORM labels — raw, cooked, fat-% and so on. When an item in the meal matches one of these ingredients: use the exact ingredient name as the item's \`name\`, copy it VERBATIM into \`library_name\`, and copy EXACTLY ONE of its bracketed labels VERBATIM into \`variant\` — pick the form the food was actually eaten in. Ingredients listed without brackets have a single form; set \`library_name\` only. Invent names only for foods NOT in this list):"
-RECIPE_HINTS_PREAMBLE="LIBRARY (your saved ingredient vocabulary — apply the Library matching priority from the system rules: prefer exact / variant matches verbatim, invent only when user-qualifier override or no reasonable variant; skip entries that don't topically belong in the dish. Bracketed values are each ingredient's saved FORM labels with per-100g macros. Use RAW forms for items cooked DURING preparation; as-consumed forms for items added ready-to-eat. When you use a listed ingredient, copy its name into \`library_name\` and the chosen form label VERBATIM into \`variant\`):"
-ADVISE_HINTS_PREAMBLE="LIBRARY (your saved ingredients — reuse an entry's exact name AND macros when it matches by name and nutrients per the Library matching rules; bracketed values are that ingredient's saved FORM labels with per-100g macros — when a recipe step needs a specific form, echo its label verbatim after the name, e.g. 'Chicken breast (raw)'; skip entries that don't belong in the dish):"
+# alongside them if the wording changes there. The runner wraps
+# these + the hint lines in <library>…</library> like production.
+MEAL_HINTS_PREAMBLE="The user's saved ingredient vocabulary; bracketed values are that ingredient's saved FORM labels — raw, cooked, fat-% and so on. When an item in the meal matches one of these ingredients: use the exact ingredient name as the item's \`name\`, copy it VERBATIM into \`library_name\`, and copy EXACTLY ONE of its bracketed labels VERBATIM into \`variant\` — pick the form the food was actually eaten in. Ingredients listed without brackets have a single form; set \`library_name\` only. Invent names only for foods NOT in this list:"
+RECIPE_HINTS_PREAMBLE="Your saved ingredient vocabulary — apply the Library matching priority from the system rules: prefer exact / variant matches verbatim, invent only when user-qualifier override or no reasonable variant; skip entries that don't topically belong in the dish. Bracketed values are each ingredient's saved FORM labels with per-100g macros. Use RAW forms for items cooked DURING preparation; as-consumed forms for items added ready-to-eat. When you use a listed ingredient, copy its name into \`library_name\` and the chosen form label VERBATIM into \`variant\`:"
+ADVISE_HINTS_PREAMBLE="Your saved ingredients — reuse an entry's exact name AND macros when it matches by name and nutrients per the Library matching rules; bracketed values are that ingredient's saved FORM labels with per-100g macros — when a recipe step needs a specific form, echo its label verbatim after the name, e.g. 'Chicken breast (raw)'; skip entries that don't belong in the dish:"
 
 # ── Per-test runner ─────────────────────────────────────────────
 run_test() {
@@ -247,7 +248,7 @@ run_test() {
     # hint preamble + user-turn prefix. Mirrors the per-surface
     # builders in AnthropicNutritionApi.kt.
     local schema_file tool_name max_tokens system_text
-    local hints_preamble="" input_prefix=""
+    local hints_preamble="" wrap_open="" wrap_close=""
     case "$surface" in
         meal)
             # Photo requests carry the image-rules block, mirroring
@@ -266,7 +267,7 @@ run_test() {
                 max_tokens="$(jqr '.meal'   "$PROMPTS_DIR/max-tokens.json")"
             fi
             hints_preamble="$MEAL_HINTS_PREAMBLE"
-            input_prefix="MEAL: "
+            wrap_open="<meal>"; wrap_close="</meal>"
             ;;
         recipe)
             local parts=("$PROMPTS_DIR/variant-explainer.txt")
@@ -276,7 +277,7 @@ run_test() {
             tool_name="define_recipe"
             max_tokens="$(jqr '.recipe' "$PROMPTS_DIR/max-tokens.json")"
             hints_preamble="$RECIPE_HINTS_PREAMBLE"
-            input_prefix="RECIPE REQUEST: "
+            wrap_open="<recipe_request>"; wrap_close="</recipe_request>"
             ;;
         ingredient)
             local parts=()
@@ -331,8 +332,8 @@ run_test() {
     local content_json
     if [[ "$has_hints" == "true" ]]; then
         local hints_block
-        hints_block="$hints_preamble"$'\n'"$(echo "$test_json" | jqr '.hints[] | "- " + .')"
-        content_json="$(jq -n --arg hints "$hints_block" --arg req "$input_prefix$input" \
+        hints_block="<library>"$'\n'"$hints_preamble"$'\n'"$(echo "$test_json" | jqr '.hints[] | "- " + .')"$'\n'"</library>"
+        content_json="$(jq -n --arg hints "$hints_block" --arg req "$wrap_open$input$wrap_close" \
             '[ { type: "text", text: $hints, cache_control: { type: "ephemeral" } },
                { type: "text", text: $req } ]')"
     else

@@ -57,12 +57,15 @@ same bar as seed-pack macros.
 - One case = one failure mode. If you can't say which distinct
   failure a case probes, it's redundant — cut it.
 - For `advise` cases the `input` is the full production user-turn
-  payload: a `REQUEST:` block (`source mode` = `strict`/`mix`/
-  `discover`, `meal category` = a `MealCategory.promptTerm` or the
-  "none — vary…" line, `to-buy list: wanted|not wanted`, optional
-  `NOTE («…»)` line), then `KITCHEN: {"ingredients":[…],"dishes":[…]}`,
-  then optionally the exclude-clause sentence. Mirror
-  `adviseRequestBlock` in the .kt when in doubt.
+  payload — XML-tagged blocks in this order: `<request>` (`source
+  mode` = `strict`/`mix`/`discover`, `meal category` = a
+  `MealCategory.promptTerm` or the "none — vary…" line, `to-buy
+  list: wanted|not wanted`), then
+  `<on_hand>{"ingredients":[…],"ready_meals":[…]}</on_hand>`, then
+  optionally `<already_seen>…</already_seen>`, then optionally
+  `<note>…</note>` LAST (the binding free-text ask sits closest to
+  generation). Mirror `buildAdviseRecipeIdeasRequestBody` in the
+  .kt when in doubt.
 - For `translate` cases the `input` is the compact JSON payload
   (`target_language` + `items[{name}]`) exactly as
   `buildTranslateRequestBody` sends it.

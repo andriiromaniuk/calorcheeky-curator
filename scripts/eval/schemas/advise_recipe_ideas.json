@@ -1,9 +1,14 @@
 {
   "name": "advise_recipe_ideas",
-  "description": "Either compose 2-3 healthy recipe options per the REQUEST block (source mode, optional meal category, optional user note), optionally with a to-buy list, OR — strict mode only — return a rationale plus a short shopping list when the selected items cannot make a balanced meal.",
+  "description": "Either compose 2-3 healthy recipe options per the <request> block (source mode, optional meal category, optional <note>), optionally with a to-buy list, OR — strict mode only — return a rationale plus a short shopping list when the on-hand items cannot make a real meal.",
   "input_schema": {
     "type": "object",
     "properties": {
+      "plan": {
+        "type": "string",
+        "maxLength": 200,
+        "description": "Filled FIRST: one short sentence — the source mode you will follow and what the <note> explicitly binds you to. Empty when there is no <note>."
+      },
       "mode": {
         "type": "string",
         "enum": [
@@ -387,6 +392,7 @@
       }
     },
     "required": [
+      "plan",
       "mode"
     ]
   }

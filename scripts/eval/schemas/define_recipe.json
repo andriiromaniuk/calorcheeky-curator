@@ -322,7 +322,7 @@
             "library_name": {
               "type": "string",
               "maxLength": 80,
-              "description": "EXACT ingredient name copied VERBATIM from the LIBRARY block when this ingredient matches a listed one; omit otherwise."
+              "description": "EXACT ingredient name copied VERBATIM from the <library> block when this ingredient matches a listed one; omit otherwise."
             },
             "variant": {
               "type": "string",

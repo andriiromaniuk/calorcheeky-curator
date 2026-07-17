@@ -191,7 +191,7 @@
             "library_name": {
               "type": "string",
               "maxLength": 80,
-              "description": "EXACT ingredient name copied VERBATIM from the LIBRARY block when this food matches one of the listed ingredients. Omit when the food isn't in the list."
+              "description": "EXACT ingredient name copied VERBATIM from the <library> block when this food matches one of the listed ingredients. Omit when the food isn't in the list."
             },
             "variant": {
               "type": "string",
