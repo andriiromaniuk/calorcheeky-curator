@@ -74,6 +74,14 @@ RUN_TAG=""
 [[ -n "$MODEL_OVERRIDE" ]] && RUN_TAG="-${MODEL_OVERRIDE//[^a-zA-Z0-9._-]/-}"
 TIMESTAMP="$(date +'%Y-%m-%d-%H%M')$RUN_TAG"
 RUN_RAW_DIR="$RUNS_DIR/raw/$TIMESTAMP"
+# Quick subset runs can start within the same minute — suffix instead
+# of merging two runs' artifacts into one dir.
+if [[ -e "$RUN_RAW_DIR" ]]; then
+    n=2
+    while [[ -e "$RUNS_DIR/raw/$TIMESTAMP-$n" ]]; do n=$((n + 1)); done
+    TIMESTAMP="$TIMESTAMP-$n"
+    RUN_RAW_DIR="$RUNS_DIR/raw/$TIMESTAMP"
+fi
 RUN_MD="$RUNS_DIR/$TIMESTAMP.md"
 mkdir -p "$RUN_RAW_DIR"
 
@@ -142,20 +150,32 @@ fi
 PHOTO_JSON='[]'
 for (( i = 0; i < PHOTO_COUNT; i++ )); do
     PHOTO_JSON="$(jq --arg id "P$((i+1))" --arg photo "${PHOTO_FILES[i]}" \
-        '. + [{ id: $id, surface: "meal", photo: $photo }]' \
+        '. + [{ id: $id, surface: "meal", folder: "photo", photo: $photo }]' \
         <<< "$PHOTO_JSON")"
 done
-jq -s --argjson photos "$PHOTO_JSON" \
-    '[ .[][] | select(.id) ] + $photos' \
+# Every manifest entry carries its suite folder so selection can go
+# by folder (the per-prompt split) as well as by runtime surface.
+jq -s --argjson photos "$PHOTO_JSON" '
+    ([ .[0][] | select(.id) | . + { folder: "text" } ] +
+     [ .[1][] | select(.id) | . + { folder: "library" } ] +
+     [ .[2][] | select(.id) | . + { folder: "recipe-ideas" } ] +
+     [ .[3][] | select(.id) | . + { folder: "translate" } ]) + $photos' \
     "${CASE_FILES[@]}" > "$EFFECTIVE_TESTS"
 
-# ── Test selection: expand surface names, default to all ───────
+# ── Test selection: folder names, surface names, ids ───────────
+# Folder names mirror the prompts/ split (text / photo / library /
+# recipe-ideas / translate); surface names select by runtime routing
+# (meal includes photos; advise == recipe-ideas). No selector = all.
 SUBSET=()
 if (( ${#RAW_SUBSET[@]} == 0 )); then
     mapfile -t SUBSET < <(jq -r '.[].id' "$EFFECTIVE_TESTS")
 else
     for sel in "${RAW_SUBSET[@]}"; do
         case "$sel" in
+            text|photo|library|recipe-ideas)
+                while IFS= read -r id; do SUBSET+=("$id"); done \
+                    < <(jq -r --arg f "$sel" '.[] | select(.folder == $f) | .id' "$EFFECTIVE_TESTS" | tr -d '\r')
+                ;;
             meal|recipe|ingredient|advise|translate)
                 while IFS= read -r id; do SUBSET+=("$id"); done \
                     < <(jq -r --arg s "$sel" '.[] | select(.surface == $s) | .id' "$EFFECTIVE_TESTS" | tr -d '\r')
@@ -165,7 +185,16 @@ else
     done
 fi
 
-echo "Running ${#SUBSET[@]} test(s) ($PHOTO_COUNT photos) → $RUN_RAW_DIR"
+# Report what was SELECTED — mention photos only when they run.
+PHOTOS_SELECTED=0
+for id in "${SUBSET[@]}"; do
+    [[ "$id" =~ ^P[0-9]+$ ]] && PHOTOS_SELECTED=$((PHOTOS_SELECTED + 1))
+done
+if (( PHOTOS_SELECTED > 0 )); then
+    echo "Running ${#SUBSET[@]} test(s), $PHOTOS_SELECTED of them photos → $RUN_RAW_DIR"
+else
+    echo "Running ${#SUBSET[@]} test(s) → $RUN_RAW_DIR"
+fi
 if [[ -n "$MODEL_OVERRIDE" ]]; then
     echo "  text model: $TEXT_MODEL (--model $MODEL_OVERRIDE) · vision model: $VISION_MODEL"
 else

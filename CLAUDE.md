@@ -532,8 +532,10 @@ Ask the user which route, **do not guess**:
   `cd scripts/eval && ./run-eval.sh` with their own
   `$ANTHROPIC_API_KEY`. Exact tokens + production request shape
   (models, max_tokens, cache markers, vision routing, hints
-  blocks). Full suite ≈ 80 cases; subsets by id or surface name:
-  `./run-eval.sh A1 T4` / `./run-eval.sh advise`. Model A/B:
+  blocks). Full suite ≈ 80 cases; subsets by id, prompts/ folder
+  name, or surface name: `./run-eval.sh A1 T4` /
+  `./run-eval.sh recipe-ideas` (that folder only, no photos, no
+  other surfaces). Model A/B:
   `--model sonnet` reroutes TEXT calls to the production vision
   model (thinking disabled, like the app's premium toggle) and
   tags the run name; default is the production Haiku.
