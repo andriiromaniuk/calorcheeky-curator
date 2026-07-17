@@ -11,7 +11,7 @@
     "expected": "mode=\"recipe\"; plan empty or names strict mode (no <note>); 2-3 DISTINCT recipes using ONLY on-hand items + ≤2 pantry staples; every recipe clearly high-protein and ≤800 kcal/portion; library names echoed verbatim (\"Chicken breast\", \"Olive oil\") with macros consistent with the hinted forms; each recipe has instructions: 3-6 newline-separated numbered steps with metric units (°C, g/ml); shopping empty." },
   { "id": "A2", "surface": "advise",
     "input": "<request>\n- source mode: strict\n- meal category: none — vary the meal types across the recipes\n- to-buy list: wanted\n</request>\n\n<on_hand>{\"ingredients\":[\"beer\",\"gummy bears\",\"potato chips\"],\"ready_meals\":[]}</on_hand>",
-    "expected": "HONEST REFUSAL: mode=\"shopping\" — nothing beyond snacks and drinks, no real meal composable. rationale ≤200 chars explaining why; 3-6 shopping items each with a ≤120-char reason. Never a forced junk recipe." },
+    "expected": "HONEST REFUSAL: mode=\"shopping\" — nothing beyond snacks and drinks, no real meal composable. rationale ≤200 chars explaining why; a to-buy list of concrete items each with a ≤120-char reason (schema caps silently at 10). Never a forced junk recipe." },
   { "id": "A3", "surface": "advise",
     "input": "<request>\n- source mode: mix\n- meal category: grain-based dishes such as rice, pasta, oats or quinoa\n- to-buy list: wanted\n</request>\n\n<on_hand>{\"ingredients\":[\"canned tuna\",\"pasta\"],\"ready_meals\":[]}</on_hand>",
     "expected": "mode=\"recipe\"; tuna + pasta form the CORE of every recipe, plus a few sensible extras; every recipe ≤800 kcal/portion; shopping (3-8 items) lists exactly those extras to buy — never tuna, pasta, or pantry staples; category fits grain-based." },
