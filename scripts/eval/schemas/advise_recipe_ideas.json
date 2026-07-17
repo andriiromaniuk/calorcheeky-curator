@@ -173,6 +173,15 @@
               "description": "3-6 numbered cooking steps. Include exact amounts, temperatures, and times. ≤400 characters. Separate each step with a newline character.",
               "maxLength": 500
             },
+            "seasonings": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "description": "Herbs, spices, and finishing touches this dish calls for (e.g. smoked paprika, fresh dill, lemon zest, sesame seeds) — names only, no amounts. Mention in `instructions` where and when each is used."
+            },
             "ingredients": {
               "type": "array",
               "items": {
