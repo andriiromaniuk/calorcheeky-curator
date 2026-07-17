@@ -170,7 +170,12 @@ run_test() {
     local hints_preamble="" input_prefix=""
     case "$surface" in
         meal)
-            local parts=("$PROMPTS_DIR/variant-explainer.txt")
+            # Photo requests carry the image-rules block, mirroring
+            # buildSystemPrompt(includeImageRules = true); text requests
+            # never see it.
+            local parts=()
+            [[ -n "$photo" ]] && parts+=("$PROMPTS_DIR/image-rules.txt")
+            parts+=("$PROMPTS_DIR/variant-explainer.txt")
             [[ "$locale" == "uk" ]] && parts+=("$PROMPTS_DIR/meal-system-uk-clause.txt")
             system_text="$(compose_system "$(cat "$PROMPTS_DIR/meal-system.txt")" "${parts[@]}")"
             schema_file="$SCHEMAS_DIR/log_food.json"

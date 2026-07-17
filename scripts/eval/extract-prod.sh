@@ -101,6 +101,7 @@ extract_prompt() {
 
 echo "Extracting production AI prompts → $OUT_DIR"
 extract_prompt "basePrompt"                   "meal-system"
+extract_prompt "imageRulesPrompt"             "image-rules"
 extract_prompt "ingredientSystemPrompt"       "ingredient-system"
 extract_prompt "recipeSystemPrompt"           "recipe-system"
 extract_prompt "adviseRecipeIdeasSystemPrompt" "advise-system"
